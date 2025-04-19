@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>รายการสินค้า</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .table-container {
+            max-width: 900px;
+            margin: 40px auto;
+        }
+        .col-checkbox {
+            width: 5%;
+            text-align: center;
+        }
+        .col-name {
+            width: 40%;
+        }
+        .col-category {
+            width: 30%;
+        }
+        .col-price {
+            width: 25%;
+            text-align: right;
+        }
+    </style>
+</head>
+<body class="bg-light">
+<div class="table-container">
+    <h2 class="mb-4 text-primary text-center">🛒 รายการสินค้า</h2>
+
+    <form>
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped text-center">
+                <thead class="table-dark">
+                <tr>
+                    <th>เลือก</th>
+                    <th>ชื่อสินค้า</th>
+                    <th>หมวดหมู่</th>
+                    <th>ราคา</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${items}">
+                    <td>
+                        <div class="d-flex justify-content-center align-items-center gap-1">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="changeQuantity(this, -1)">−</button>
+                            <input type="number" class="form-control text-center item-quantity"
+                                   value="0" min="0"
+                                   th:data-price="${item.price}"
+                                   th:data-category="${item.category}"
+                                   style="width: 60px;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="changeQuantity(this, 1)">+</button>
+                        </div>
+                    </td>
+                    <td th:text="${item.name}">ชื่อสินค้า</td>
+                    <td th:text="${item.category}">หมวดหมู่</td>
+                    <td th:text="${item.price} + ' บาท'">ราคา</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-end align-items-center gap-2">
+            <label for="couponInput" class="form-label mb-0">🎟️ ใส่คูปอง:</label>
+            <input list="couponOptions" id="couponInput" class="form-control w-auto" placeholder="เลือกหรือพิมพ์รหัสคูปอง">
+
+            <datalist id="couponOptions">
+                <option value="SAVE10">
+                <option value="SAVE50">
+                <option value="SAVE100">
+                <option value="SAVEPER10">
+                <option value="SAVEPER20">
+                <option value="SAVEPER30">
+            </datalist>
+            <button type="button" class="btn btn-primary" id="applyCouponBtn">ใช้คูปอง</button>
+        </div>
+
+        <div class="mt-3 text-end fs-5">
+             Price: <span id="totalPrice">0.00</span> บาท<br>
+             discount of coupon: <span id="discountAmount">0.00</span> บาท<br>
+             discount on top: <span id="onTopDiscount">0.00</span> บาท<br>
+            <div id="discountText" class="text-muted small mt-1"></div>
+        </div>
+
+        <div class="mt-3 text-end fs-5">
+            ⭐ Point : <strong id="availablePoints">500</strong>
+            Use Point:
+            <input type="number" id="usedPointsInput" class="form-control d-inline-block" style="width: 100px;" min="0" value="0">
+            <button type="button" class="btn btn-sm btn-outline-success ms-2" id="applyPoint">ใช้ Point</button>
+            <br>
+            discount of point: <span id="pointDiscount">0.00</span> บาท<br>
+            <div id="pointWarning" class="text-danger small mt-1" style="display: none;">
+                🚫 ใช้ Point ได้ไม่เกิน 20% ของราคาหลังหักส่วนลดคูปอง
+            </div>
+            🎊 special discount: <span id="specialCampaignDiscount">0.00</span> บาท<br>
+            <div id="specialCampaignText" class="text-muted small mt-1"></div>
+            💰 final price: <strong><span id="finalPrice">0.00</span> บาท</strong>
+        </div>
+
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const quantityInputs = document.querySelectorAll('.item-quantity');
+        const totalDisplay = document.getElementById('totalPrice');
+        const finalDisplay = document.getElementById('finalPrice');
+        const discountDisplay = document.getElementById('discountAmount');
+        const onTopDisplay = document.getElementById('onTopDiscount');
+        const couponInput = document.getElementById('couponInput');
+        const discountText = document.getElementById('discountText');
+        const usedPointsInput = document.getElementById('usedPointsInput');
+        const availablePoints = 500; // กำหนดจำนวน point ที่มี
+        const availablePointsDisplay = document.getElementById('availablePoints');
+        const specialCampaignText = document.getElementById('specialCampaignText');
+
+        let rawTotal = 0;
+        let totalAfterCoupon = 0;
+        let onTopDiscount = 0;
+        let couponDiscount = 0;
+        let pointDiscount = 0;
+
+        function calculateTotal() {
+            let rawTotal = 0;
+            let categoryTotals = {};
+
+            quantityInputs.forEach(input => { //loop คำนวณ จำนวนสินค้า * ราคา
+                const qty = parseInt(input.value) || 0;
+                const price = parseFloat(input.dataset.price);
+                const category = input.dataset.category;
+
+                const subtotal = qty * price;
+                rawTotal += subtotal;
+
+                if (!categoryTotals[category]) {
+                    categoryTotals[category] = 0;
+                }
+                categoryTotals[category] += subtotal;
+            });
+
+            // คูปอง
+            const coupon = couponInput.value.trim().toUpperCase();
+            let couponDiscount = 0;
+            if (coupon === 'SAVEPER10') {
+                    couponDiscount = rawTotal * 0.10;
+                } else if (coupon === 'SAVE10') {
+                    couponDiscount = 10;
+                } else if (coupon === 'SAVE50') {
+                    couponDiscount = 50;
+                } else if (coupon === 'SAVE100') {
+                    couponDiscount = 100;
+                } else if (coupon === 'SAVEPER20') {
+                    couponDiscount = rawTotal * 0.20;
+                } else if (coupon === 'SAVEPER30') {
+                    couponDiscount = rawTotal * 0.30;
+                }
+
+            const totalAfterCoupon = Math.max(0, rawTotal - couponDiscount);
+            let maxPointUsable = totalAfterCoupon * 0.2;
+            let requestedPoints = parseInt(usedPointsInput.value || 0);
+            let usedPoints = Math.min(requestedPoints, maxPointUsable, availablePoints);
+
+            const pointWarning = document.getElementById('pointWarning');
+
+            if (requestedPoints > maxPointUsable) {
+                pointWarning.style.display = 'block';
+                usedPoints = Math.min(availablePoints, maxPointUsable);
+                usedPointsInput.value = Math.floor(usedPoints);
+            } else {
+                pointWarning.style.display = 'none';
+            }
+
+
+            const categoryDiscountRates = {
+                "Clothing": 0.15,
+                "Accessories": 0.10,
+                "Electronics": 0.05
+            };
+
+            let onTopDiscount = 0;
+            let discountMessages = [];
+
+            // หากใช้ point จะไม่ใช้ on top
+            if (usedPoints === 0) {
+                // On top discount ตามหมวดหมู่
+                const categoryDiscountRates = {
+                    "Clothing": 0.15,
+                    "Accessories": 0.15,
+                    "Electronics": 0.15
+                };
+
+                const totalCategoryValue = Object.values(categoryTotals).reduce((a, b) => a + b, 0);
+
+                for (const category in categoryTotals) {
+                    const totalInCategory = categoryTotals[category];
+                    if (totalInCategory <= 0) continue; // ข้ามหมวดที่ไม่ได้เลือกสินค้า
+
+                    const rate = categoryDiscountRates[category] || 0;
+                    const percentOfTotal = totalInCategory / totalCategoryValue;
+                    const categoryBase = totalAfterCoupon * percentOfTotal;
+
+                    const categoryDiscount = Math.ceil((categoryBase * rate) * 100) / 100;
+                    onTopDiscount += categoryDiscount;
+
+                    if (rate > 0) {
+                        discountMessages.push(`🔸 Discount ${Math.round(rate * 100)}% Off on ${category}`);
+                    }
+                }
+            }
+
+            // 🎉 Special Campaign
+            let specialcamp = 300; //ทุกจำนวนเงิน
+            let specialcampDis = 40; //จำนวนเงินที่ลด
+            let specialCampaignDiscount = Math.floor(totalAfterCoupon / specialcamp) * specialcampDis;
+
+
+            if (specialCampaignDiscount > 0) {
+                specialCampaignText.textContent = `🎁 Discount: ${specialcampDis} THB at every ${specialcamp} THB )`;
+            } else {
+                specialCampaignText.textContent = "";
+            }
+
+
+
+            let final = Math.max(0, totalAfterCoupon - onTopDiscount - usedPoints - specialCampaignDiscount);
+
+            totalDisplay.textContent = rawTotal.toFixed(2);
+            discountDisplay.textContent = couponDiscount.toFixed(2);
+            onTopDisplay.textContent = onTopDiscount.toFixed(2);
+            finalDisplay.textContent = final.toFixed(2);
+            discountText.textContent = discountMessages.join(', ');
+            document.getElementById("pointDiscount").textContent = usedPoints.toFixed(2);
+            document.getElementById("specialCampaignDiscount").textContent = specialCampaignDiscount.toFixed(2);
+
+        }
+
+        // ปุ่มเพิ่มลดจำนวน
+        window.changeQuantity = function (button, change) {
+            const input = button.parentElement.querySelector('input');
+            let value = parseInt(input.value) || 0;
+            value = Math.max(0, value + change);
+            input.value = value;
+            calculateTotal();
+        }
+
+        // Event เมื่อเปลี่ยนจำนวน
+        quantityInputs.forEach(input => {
+            input.addEventListener('input', calculateTotal);
+        });
+
+        document.getElementById('applyCouponBtn').addEventListener('click', function () {
+            calculateTotal();
+        });
+
+        usedPointsInput.addEventListener('input', () => {
+            calculateTotal();
+        });
+
+        document.getElementById('applyPoint').addEventListener('click', function () {
+            calculateTotal();
+        });
+    });
+</script>
+</body>
+</html>

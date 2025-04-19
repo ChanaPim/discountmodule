@@ -1,0 +1,29 @@
+{
+  "items": [
+    { "name": "T-Shirt", "category": "Clothing", "price": 350 },
+    { "name": "Hat", "category": "Accessories", "price": 250 },
+    { "name": "Hoodie", "category": "Clothing", "price": 700 },
+    { "name": "Sneakers", "category": "Footwear", "price": 1200 },
+    { "name": "Backpack", "category": "Accessories", "price": 980 },
+    { "name": "Watch", "category": "Accessories", "price": 850 },
+    { "name": "Socks", "category": "Clothing", "price": 120 },
+    { "name": "Belt", "category": "Accessories", "price": 230 },
+    { "name": "Jacket", "category": "Clothing", "price": 1500 },
+    { "name": "Sunglasses", "category": "Accessories", "price": 600 },
+    { "name": "Wallet", "category": "Accessories", "price": 450 },
+    { "name": "Dress", "category": "Clothing", "price": 900 },
+    { "name": "Scarf", "category": "Accessories", "price": 220 },
+    { "name": "Shorts", "category": "Clothing", "price": 400 },
+    { "name": "Boots", "category": "Footwear", "price": 1600 },
+    { "name": "Bag", "category": "Accessories", "price": 640 },
+    { "name": "Blouse", "category": "Clothing", "price": 500 },
+    { "name": "Gloves", "category": "Accessories", "price": 250 },
+    { "name": "Flip Flops", "category": "Footwear", "price": 100 },
+    { "name": "Raincoat", "category": "Clothing", "price": 800 },
+    {"name": "Wireless Earbuds", "category": "Electronics", "price": 1290},
+    {"name": "Bluetooth Speaker", "category": "Electronics", "price": 1590},
+    {"name": "Smartwatch", "category": "Electronics", "price": 2990},
+    {"name": "Power Bank 20000mAh", "category": "Electronics", "price": 890},
+    {"name": "USB-C Hub 7-in-1", "category": "Electronics", "price": 790}
+  ]
+}
